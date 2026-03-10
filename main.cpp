@@ -93,6 +93,14 @@ bool validAppliance(const Appliance& a) {
     return true;
 }
 
+int findByName(const Appliance a[], int n, const string& name) {
+    string key = lowerText(trim(name));
+    for (int i = 0; i < n; i++) {
+        if (lowerText(trim(a[i].name)) == key) return i;
+    }
+    return -1;
+}
+
 void saveAppliances(const Appliance a[], int n) {
     ofstream out(APPLIANCES_FILE.c_str());
     if (!out) {
@@ -118,18 +126,14 @@ void loadAppliances(Appliance a[], int& n) {
         int p2 = (p1 == -1) ? -1 : (int)line.find('|', p1 + 1);
         if (p1 == -1 || p2 == -1) continue;
 
-        string name = trim(line.substr(0, p1));
+        Appliance tmp;
+        tmp.name = trim(line.substr(0, p1));
+
         string wStr = trim(line.substr(p1 + 1, p2 - p1 - 1));
         string hStr = trim(line.substr(p2 + 1));
 
-        double w = 0, h = 0;
-        try { w = stod(wStr); h = stod(hStr); }
+        try { tmp.watts = stod(wStr); tmp.hours = stod(hStr); }
         catch (...) { continue; }
-
-        Appliance tmp;
-        tmp.name = name;
-        tmp.watts = w;
-        tmp.hours = h;
 
         if (!validAppliance(tmp)) continue;
         if (n >= MAX_APPLIANCES) break;
@@ -140,14 +144,8 @@ void loadAppliances(Appliance a[], int& n) {
 }
 
 void addAppliance(Appliance a[], int& n) {
-    if (n >= MAX_APPLIANCES) {
-        cout << "Limit reached.\n";
-        return;
-    }
-
     Appliance x;
     x.name = readNonEmptyLine("Name: ");
-
     do { x.watts = readDouble("Watts (>0): "); } while (x.watts <= 0);
     do { x.hours = readDouble("Hours/day (0-24): "); } while (x.hours < 0 || x.hours > 24);
 
@@ -156,9 +154,29 @@ void addAppliance(Appliance a[], int& n) {
         return;
     }
 
+    int idx = findByName(a, n, x.name);
+    if (idx != -1) {
+        cout << "Appliance already exists: " << a[idx].name << "\n";
+        cout << "Overwrite its watts/hours with new values? (y/n): ";
+        char ch; cin >> ch; clearLine();
+        if (ch == 'y' || ch == 'Y') {
+            a[idx].watts = x.watts;
+            a[idx].hours = x.hours;
+            saveAppliances(a, n);
+            cout << "Updated and saved.\n";
+        } else {
+            cout << "Not changed.\n";
+        }
+        return;
+    }
+
+    if (n >= MAX_APPLIANCES) {
+        cout << "Limit reached.\n";
+        return;
+    }
+
     a[n] = x;
     n++;
-
     saveAppliances(a, n);
     cout << "Saved.\n";
 }
