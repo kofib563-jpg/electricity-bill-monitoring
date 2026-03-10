@@ -39,6 +39,27 @@ int readInt(const string& prompt) {
     }
 }
 
+double readDouble(const string& prompt) {
+    double x;
+    while (true) {
+        cout << prompt;
+        if (cin >> x) { clearLine(); return x; }
+        cout << "Invalid number. Try again.\n";
+        clearLine();
+    }
+}
+
+string readNonEmptyLine(const string& prompt) {
+    while (true) {
+        cout << prompt;
+        string s;
+        getline(cin, s);
+        s = trim(s);
+        if (!s.empty()) return s;
+        cout << "Input must not be empty.\n";
+    }
+}
+
 void menu() {
     cout << "\n1. Register appliance\n";
     cout << "2. View appliances\n";
@@ -48,8 +69,68 @@ void menu() {
     cout << "6. Exit\n";
 }
 
-void loadAppliances(Appliance a[], int& n) { n = 0; }
-void saveAppliances(const Appliance a[], int n) {}
+void saveAppliances(const Appliance a[], int n) {
+    ofstream out(APPLIANCES_FILE.c_str());
+    if (!out) {
+        cout << "Error writing " << APPLIANCES_FILE << "\n";
+        return;
+    }
+    for (int i = 0; i < n; i++) {
+        out << a[i].name << "|" << a[i].watts << "|" << a[i].hours << "\n";
+    }
+}
+
+void loadAppliances(Appliance a[], int& n) {
+    n = 0;
+    ifstream in(APPLIANCES_FILE.c_str());
+    if (!in) return;
+
+    string line;
+    while (getline(in, line)) {
+        line = trim(line);
+        if (line.empty()) continue;
+
+        int p1 = (int)line.find('|');
+        int p2 = (p1 == -1) ? -1 : (int)line.find('|', p1 + 1);
+        if (p1 == -1 || p2 == -1) continue;
+
+        string name = trim(line.substr(0, p1));
+        string wStr = trim(line.substr(p1 + 1, p2 - p1 - 1));
+        string hStr = trim(line.substr(p2 + 1));
+        if (name.empty()) continue;
+
+        double w = 0, h = 0;
+        try { w = stod(wStr); h = stod(hStr); }
+        catch (...) { continue; }
+
+        if (w <= 0 || h < 0 || h > 24) continue;
+        if (n >= MAX_APPLIANCES) break;
+
+        a[n].name = name;
+        a[n].watts = w;
+        a[n].hours = h;
+        n++;
+    }
+}
+
+void addAppliance(Appliance a[], int& n) {
+    if (n >= MAX_APPLIANCES) {
+        cout << "Limit reached.\n";
+        return;
+    }
+
+    Appliance x;
+    x.name = readNonEmptyLine("Name: ");
+
+    do { x.watts = readDouble("Watts (>0): "); } while (x.watts <= 0);
+    do { x.hours = readDouble("Hours/day (0-24): "); } while (x.hours < 0 || x.hours > 24);
+
+    a[n] = x;
+    n++;
+
+    saveAppliances(a, n); // auto-save
+    cout << "Saved.\n";
+}
 
 int main() {
     Appliance appliances[MAX_APPLIANCES];
@@ -64,11 +145,16 @@ int main() {
         menu();
         int choice = readInt("Choose (1-6): ");
 
-        if (choice == 6) {
+        if (choice == 1) {
+            addAppliance(appliances, count);
+        } else if (choice == 5) {
+            saveAppliances(appliances, count);
+            cout << "Saved to " << APPLIANCES_FILE << ".\n";
+        } else if (choice == 6) {
             saveAppliances(appliances, count);
             cout << "Goodbye!\n";
             break;
-        } else if (choice >= 1 && choice <= 5) {
+        } else if (choice >= 2 && choice <= 4) {
             cout << "Feature not added yet (will appear in next parts).\n";
         } else {
             cout << "Invalid choice.\n";
