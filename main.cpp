@@ -86,6 +86,12 @@ double totalKwhPerDay(const Appliance a[], int n) {
     return sum;
 }
 
+double totalWatts(const Appliance a[], int n) {
+    double sum = 0;
+    for (int i = 0; i < n; i++) sum += a[i].watts;
+    return sum;
+}
+
 bool validAppliance(const Appliance& a) {
     if (trim(a.name).empty()) return false;
     if (a.watts <= 0) return false;
@@ -203,6 +209,11 @@ void listAppliances(const Appliance a[], int n) {
              << setw(10) << kwhPerDay(a[i])
              << "\n";
     }
+
+    cout << "-------------------------------------------------\n";
+    cout << "Total appliances: " << n << "\n";
+    cout << "Total connected load (watts): " << totalWatts(a, n) << " W\n";
+    cout << "Total daily energy: " << totalKwhPerDay(a, n) << " kWh/day\n";
 }
 
 void searchAppliances(const Appliance a[], int n) {
