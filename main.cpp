@@ -86,6 +86,13 @@ double totalKwhPerDay(const Appliance a[], int n) {
     return sum;
 }
 
+bool validAppliance(const Appliance& a) {
+    if (trim(a.name).empty()) return false;
+    if (a.watts <= 0) return false;
+    if (a.hours < 0 || a.hours > 24) return false;
+    return true;
+}
+
 void saveAppliances(const Appliance a[], int n) {
     ofstream out(APPLIANCES_FILE.c_str());
     if (!out) {
@@ -114,18 +121,20 @@ void loadAppliances(Appliance a[], int& n) {
         string name = trim(line.substr(0, p1));
         string wStr = trim(line.substr(p1 + 1, p2 - p1 - 1));
         string hStr = trim(line.substr(p2 + 1));
-        if (name.empty()) continue;
 
         double w = 0, h = 0;
         try { w = stod(wStr); h = stod(hStr); }
         catch (...) { continue; }
 
-        if (w <= 0 || h < 0 || h > 24) continue;
+        Appliance tmp;
+        tmp.name = name;
+        tmp.watts = w;
+        tmp.hours = h;
+
+        if (!validAppliance(tmp)) continue;
         if (n >= MAX_APPLIANCES) break;
 
-        a[n].name = name;
-        a[n].watts = w;
-        a[n].hours = h;
+        a[n] = tmp;
         n++;
     }
 }
@@ -138,8 +147,14 @@ void addAppliance(Appliance a[], int& n) {
 
     Appliance x;
     x.name = readNonEmptyLine("Name: ");
+
     do { x.watts = readDouble("Watts (>0): "); } while (x.watts <= 0);
     do { x.hours = readDouble("Hours/day (0-24): "); } while (x.hours < 0 || x.hours > 24);
+
+    if (!validAppliance(x)) {
+        cout << "Invalid appliance data.\n";
+        return;
+    }
 
     a[n] = x;
     n++;
@@ -183,8 +198,7 @@ void searchAppliances(const Appliance a[], int n) {
 
     cout << fixed << setprecision(2);
     for (int i = 0; i < n; i++) {
-        string nm = lowerText(a[i].name);
-        if (nm.find(q) != string::npos) {
+        if (lowerText(a[i].name).find(q) != string::npos) {
             cout << "- " << a[i].name
                  << " | " << a[i].watts << " W"
                  << " | " << a[i].hours << " hrs"
@@ -266,16 +280,9 @@ int main() {
         else if (choice == 2) listAppliances(appliances, count);
         else if (choice == 3) searchAppliances(appliances, count);
         else if (choice == 4) billing(appliances, count);
-        else if (choice == 5) {
-            saveAppliances(appliances, count);
-            cout << "Saved to " << APPLIANCES_FILE << ".\n";
-        } else if (choice == 6) {
-            saveAppliances(appliances, count);
-            cout << "Goodbye!\n";
-            break;
-        } else {
-            cout << "Invalid choice.\n";
-        }
+        else if (choice == 5) { saveAppliances(appliances, count); cout << "Saved.\n"; }
+        else if (choice == 6) { saveAppliances(appliances, count); cout << "Goodbye!\n"; break; }
+        else cout << "Invalid choice.\n";
     }
     return 0;
 }
