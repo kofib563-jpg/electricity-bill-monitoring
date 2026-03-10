@@ -1,4 +1,3 @@
-#include <iostream>
 #include <fstream>
 #include <string>
 #include <iomanip>
@@ -267,13 +266,29 @@ void billing(const Appliance a[], int n) {
     double tariff;
     do { tariff = readDouble("Tariff per kWh (>0): "); } while (tariff <= 0);
 
+    cout << "\n--- Per-appliance breakdown ---\n";
+    cout << fixed << setprecision(2);
+    cout << left << setw(25) << "Name"
+         << setw(12) << "kWh/day"
+         << setw(12) << "Cost/day"
+         << "\n";
+
+    for (int i = 0; i < n; i++) {
+        double kwh = kwhPerDay(a[i]);
+        double cost = kwh * tariff;
+        cout << left << setw(25) << a[i].name
+             << setw(12) << kwh
+             << setw(12) << cost
+             << "\n";
+    }
+
     double dayKwh = totalKwhPerDay(a, n);
     double dayCost = dayKwh * tariff;
     double monthKwh = dayKwh * 30.0;
     double monthCost = dayCost * 30.0;
 
-    cout << fixed << setprecision(2);
-    cout << "\nTariff: " << tariff << " per kWh\n";
+    cout << "--------------------------------\n";
+    cout << "Tariff: " << tariff << " per kWh\n";
     cout << "Daily energy: " << dayKwh << " kWh\n";
     cout << "Daily cost:   " << dayCost << "\n";
     cout << "30-day energy: " << monthKwh << " kWh\n";
