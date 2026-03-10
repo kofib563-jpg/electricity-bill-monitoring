@@ -29,6 +29,13 @@ string trim(const string& s) {
     return s.substr(i, j - i + 1);
 }
 
+string lowerText(string s) {
+    for (int i = 0; i < (int)s.size(); i++) {
+        if (s[i] >= 'A' && s[i] <= 'Z') s[i] = char(s[i] - 'A' + 'a');
+    }
+    return s;
+}
+
 int readInt(const string& prompt) {
     int x;
     while (true) {
@@ -67,6 +74,10 @@ void menu() {
     cout << "4. Billing\n";
     cout << "5. Save to file\n";
     cout << "6. Exit\n";
+}
+
+double kwhPerDay(const Appliance& a) {
+    return (a.watts / 1000.0) * a.hours;
 }
 
 void saveAppliances(const Appliance a[], int n) {
@@ -121,15 +132,61 @@ void addAppliance(Appliance a[], int& n) {
 
     Appliance x;
     x.name = readNonEmptyLine("Name: ");
-
     do { x.watts = readDouble("Watts (>0): "); } while (x.watts <= 0);
     do { x.hours = readDouble("Hours/day (0-24): "); } while (x.hours < 0 || x.hours > 24);
 
     a[n] = x;
     n++;
 
-    saveAppliances(a, n); // auto-save
+    saveAppliances(a, n);
     cout << "Saved.\n";
+}
+
+void listAppliances(const Appliance a[], int n) {
+    if (n == 0) {
+        cout << "No appliances.\n";
+        return;
+    }
+
+    cout << fixed << setprecision(2);
+    cout << left << setw(4) << "#"
+         << setw(25) << "Name"
+         << setw(10) << "Watts"
+         << setw(10) << "Hours"
+         << setw(10) << "kWh/day"
+         << "\n";
+
+    for (int i = 0; i < n; i++) {
+        cout << left << setw(4) << (i + 1)
+             << setw(25) << a[i].name
+             << setw(10) << a[i].watts
+             << setw(10) << a[i].hours
+             << setw(10) << kwhPerDay(a[i])
+             << "\n";
+    }
+}
+
+void searchAppliances(const Appliance a[], int n) {
+    if (n == 0) {
+        cout << "No appliances.\n";
+        return;
+    }
+
+    string q = lowerText(readNonEmptyLine("Search name: "));
+    bool found = false;
+
+    cout << fixed << setprecision(2);
+    for (int i = 0; i < n; i++) {
+        string nm = lowerText(a[i].name);
+        if (nm.find(q) != string::npos) {
+            cout << "- " << a[i].name
+                 << " | " << a[i].watts << " W"
+                 << " | " << a[i].hours << " hrs"
+                 << " | " << kwhPerDay(a[i]) << " kWh/day\n";
+            found = true;
+        }
+    }
+    if (!found) cout << "No match.\n";
 }
 
 int main() {
@@ -145,17 +202,18 @@ int main() {
         menu();
         int choice = readInt("Choose (1-6): ");
 
-        if (choice == 1) {
-            addAppliance(appliances, count);
-        } else if (choice == 5) {
+        if (choice == 1) addAppliance(appliances, count);
+        else if (choice == 2) listAppliances(appliances, count);
+        else if (choice == 3) searchAppliances(appliances, count);
+        else if (choice == 5) {
             saveAppliances(appliances, count);
             cout << "Saved to " << APPLIANCES_FILE << ".\n";
         } else if (choice == 6) {
             saveAppliances(appliances, count);
             cout << "Goodbye!\n";
             break;
-        } else if (choice >= 2 && choice <= 4) {
-            cout << "Feature not added yet (will appear in next parts).\n";
+        } else if (choice == 4) {
+            cout << "Feature not added yet (will appear in next part).\n";
         } else {
             cout << "Invalid choice.\n";
         }
