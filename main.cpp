@@ -80,6 +80,12 @@ double kwhPerDay(const Appliance& a) {
     return (a.watts / 1000.0) * a.hours;
 }
 
+double totalKwhPerDay(const Appliance a[], int n) {
+    double sum = 0;
+    for (int i = 0; i < n; i++) sum += kwhPerDay(a[i]);
+    return sum;
+}
+
 void saveAppliances(const Appliance a[], int n) {
     ofstream out(APPLIANCES_FILE.c_str());
     if (!out) {
@@ -189,6 +195,60 @@ void searchAppliances(const Appliance a[], int n) {
     if (!found) cout << "No match.\n";
 }
 
+void appendSummary(double tariff, int count,
+                   double dayKwh, double dayCost,
+                   double monthKwh, double monthCost) {
+    ofstream out(BILLING_FILE.c_str(), ios::app);
+    if (!out) {
+        cout << "Error appending " << BILLING_FILE << "\n";
+        return;
+    }
+
+    out << "================ BILLING SUMMARY ================\n";
+    out << fixed << setprecision(2);
+    out << "Tariff: " << tariff << " per kWh\n";
+    out << "Appliances count: " << count << "\n";
+    out << "Total daily energy: " << dayKwh << " kWh\n";
+    out << "Total daily cost:  " << dayCost << "\n";
+    out << "Estimated 30-day energy: " << monthKwh << " kWh\n";
+    out << "Estimated 30-day cost:  " << monthCost << "\n";
+    out << "=================================================\n\n";
+}
+
+void billing(const Appliance a[], int n) {
+    if (n == 0) {
+        cout << "No appliances. Add some first.\n";
+        return;
+    }
+
+    double tariff;
+    do { tariff = readDouble("Tariff per kWh (>0): "); } while (tariff <= 0);
+
+    double dayKwh = totalKwhPerDay(a, n);
+    double dayCost = dayKwh * tariff;
+    double monthKwh = dayKwh * 30.0;
+    double monthCost = dayCost * 30.0;
+
+    cout << fixed << setprecision(2);
+    cout << "\nTariff: " << tariff << " per kWh\n";
+    cout << "Daily energy: " << dayKwh << " kWh\n";
+    cout << "Daily cost:   " << dayCost << "\n";
+    cout << "30-day energy: " << monthKwh << " kWh\n";
+    cout << "30-day cost:   " << monthCost << "\n";
+
+    cout << "Save summary to billing_summary.txt? (y/n): ";
+    char ch;
+    cin >> ch;
+    clearLine();
+
+    if (ch == 'y' || ch == 'Y') {
+        appendSummary(tariff, n, dayKwh, dayCost, monthKwh, monthCost);
+        cout << "Billing summary saved.\n";
+    } else {
+        cout << "Not saved.\n";
+    }
+}
+
 int main() {
     Appliance appliances[MAX_APPLIANCES];
     int count = 0;
@@ -205,6 +265,7 @@ int main() {
         if (choice == 1) addAppliance(appliances, count);
         else if (choice == 2) listAppliances(appliances, count);
         else if (choice == 3) searchAppliances(appliances, count);
+        else if (choice == 4) billing(appliances, count);
         else if (choice == 5) {
             saveAppliances(appliances, count);
             cout << "Saved to " << APPLIANCES_FILE << ".\n";
@@ -212,8 +273,6 @@ int main() {
             saveAppliances(appliances, count);
             cout << "Goodbye!\n";
             break;
-        } else if (choice == 4) {
-            cout << "Feature not added yet (will appear in next part).\n";
         } else {
             cout << "Invalid choice.\n";
         }
